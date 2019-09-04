@@ -1,2 +1,2 @@
 # Master-project
-My master project at MIPT
+My master project at DCAM, MIPT
