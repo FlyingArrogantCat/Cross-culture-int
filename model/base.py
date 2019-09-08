@@ -13,8 +13,8 @@ class Object:
 
     def get_tensor_representation(self):
         if self.condition == 'numpy':
-            self.curr_energy = torch.from_numpy(self.curr_energy).float()
-            self.education = torch.from_numpy(self.education).float()
+            self.curr_energy = torch.FloatTensor([self.curr_energy])
+            self.education = torch.FloatTensor([self.education])
             self.culture_condition = torch.from_numpy(self.culture_condition).float()
             self.condition = 'torch'
 
@@ -55,11 +55,16 @@ class InteractionModel(nn.Module):
 
         return acted_out, action_out, acted_out_up, action_out_up
 
+    def params(self):
+        return [{'params': self.sigmoid_1.parameters()},
+                {'params': self.sigmoid_2.parameters()},
+                {'params': self.sigmoid_3.parameters()},
+                {'params': self.tanh.parameters()}]
+
 
 class EnergyDecoder(nn.Module):
     def __init__(self, size=1000):
         super(EnergyDecoder, self).__init__()
-
         self.net = nn.Sequential(nn.Linear(1, 64),
                                  nn.ReLU(),
                                  nn.Linear(64, 512),
@@ -70,3 +75,6 @@ class EnergyDecoder(nn.Module):
     def forward(self, x):
         out = self.net(x)
         return out
+
+    def params(self):
+        return [{'params': self.net.parameters()}]

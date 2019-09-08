@@ -25,3 +25,11 @@ class InteractionLoss(nn.Module):
     @staticmethod
     def cross_entropy(change, res, gt):
         return torch.sum(change * torch.log(torch.abs(res / gt)))
+
+
+class EnergyDecoderLoss(nn.Module):
+    def __init__(self):
+        super(EnergyDecoderLoss, self).__init__()
+
+    def forward(self, vector, energy):
+        return -1 * energy * torch.sum(torch.log(vector))
