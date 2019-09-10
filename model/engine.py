@@ -24,9 +24,18 @@ class MainEngine(torch.nn.Module):
         self.decoder_optimizer = torch.optim.Adam(self.decoder.params(), lr=1e-4)
         self.model_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
-    def step(self, constant=100, energy=0.5):
+    def step(self, constant=100, energy=0, update=None):
         for x in self.list_obj:
-            x.curr_energy = np.random.uniform(0, energy)
+            if x.condition == 'numpy':
+                x.curr_energy = np.random.uniform(0, energy)
+            else:
+                x.curr_energy = torch.FloatTensor(1).uniform_(0, energy)
+
+        if update is not None:
+            if self.list_obj[0].condition == 'numpy':
+                self.list_obj[0].curr_energy = update
+            else:
+                self.list_obj[0].curr_energy = torch.tensor(update)
 
         self.constant = int(constant)
         if self.constant > self.n_elements:
@@ -49,31 +58,36 @@ class MainEngine(torch.nn.Module):
             action.get_tensor_representation()
             acted.get_tensor_representation()
 
-            vec_energy_acted = self.decoder(acted.curr_energy)
-            vec_energy_action = self.decoder(action.curr_energy)
+            vec_energy_acted = acted.curr_energy * torch.ones(self.size)#self.decoder(acted.curr_energy)
+            vec_energy_action = action.curr_energy * torch.ones(self.size)#self.decoder(action.curr_energy)
 
-            dec_loss = self.decoder_loss(vec_energy_acted, acted.curr_energy)
-            dec_loss.backward(retain_graph=True)
-            dec_loss = self.decoder_loss(vec_energy_action, acted.curr_energy)
-            dec_loss.backward(retain_graph=True)
-            self.decoder_optimizer.step()
+            #dec_loss = self.decoder_loss(vec_energy_acted, acted.curr_energy)
+            #dec_loss.backward(retain_graph=True)
+            #dec_loss = self.decoder_loss(vec_energy_action, acted.curr_energy)
+            #dec_loss.backward(retain_graph=True)
+            #self.decoder_optimizer.step()
 
             result = self.interaction_model(acted.culture_condition + vec_energy_acted,
                                             action.culture_condition + vec_energy_action)
 
-            main_loss = self.model_loss(result, (acted.culture_condition, action.culture_condition))
+            main_loss = self.model_loss(result, (acted.culture_condition,
+                                                 action.culture_condition))
             main_loss.backward(retain_graph=True)
             self.model_optimizer.step()
 
-            acted.culture_condition = result[0]
-            action.culture_condition = result[1]
+            acted.culture_condition = acted.education * result[0]
+            action.culture_condition = action.education * result[1]
 
     def define_action_index(self):
+
+        for x in self.list_obj:
+            x.get_numpy_representation()
+
         K = np.zeros((self.constant, self.constant))
         for i in range(self.constant):
             for j in range(self.constant):
-                 K[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition) / \
-                           np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition)
+                 K[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition.T) / \
+                           np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
 
         K = np.abs(K) > self.threshold
 

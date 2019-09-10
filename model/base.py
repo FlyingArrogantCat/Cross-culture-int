@@ -13,8 +13,8 @@ class Object:
 
     def get_tensor_representation(self):
         if self.condition == 'numpy':
-            self.curr_energy = torch.FloatTensor([self.curr_energy])
-            self.education = torch.FloatTensor([self.education])
+            self.curr_energy = torch.tensor(self.curr_energy)
+            self.education = torch.tensor(self.education)
             self.culture_condition = torch.from_numpy(self.culture_condition).float()
             self.condition = 'torch'
 
@@ -22,7 +22,7 @@ class Object:
         if self.condition == 'torch':
             self.curr_energy = self.curr_energy.detach().cpu().numpy()
             self.education = self.education.detach().cpu().numpy()
-            self.culture_condition = self.culture_condition.deatch().cpu().numpy()
+            self.culture_condition = self.culture_condition.detach().cpu().numpy()
             self.condition = 'numpy'
 
     @staticmethod
@@ -31,16 +31,16 @@ class Object:
 
 
 class InteractionModel(nn.Module):
-    def __init__(self, step=1e-2, size=1024):
+    def __init__(self, step=1e-5, size=1024):
         super(InteractionModel, self).__init__()
         self.step = step
         self.size = size
         self.sigmoid_1 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Sigmoid())
+                                       nn.Tanh())
         self.sigmoid_2 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Sigmoid())
+                                       nn.Tanh())
         self.sigmoid_3 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Sigmoid())
+                                       nn.Tanh())
         self.tanh = nn.Sequential(nn.Linear(self.size, self.size),
                                   nn.Tanh())
 
