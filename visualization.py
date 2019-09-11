@@ -9,7 +9,6 @@ threshold = 0
 n_elements = 50
 energy = 0.5
 
-
 engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold)
 zeros_cult_cond = []
 rn_cult_cond = []
