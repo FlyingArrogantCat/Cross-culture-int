@@ -15,14 +15,15 @@ class MainEngine(torch.nn.Module):
         self.n_act_el = None
 
         self.interaction_model = InteractionModel(step=1e-3, size=self.size)
+        self.feelings_model = InteractionModel(step=1e-2, size=self.size)
         self.decoder = EnergyDecoder(size=self.size)
         self.list_obj = [Object(size=size, e_level=e_level) for x in range(n_elements)]
 
         self.decoder_loss = EnergyDecoderLoss()
         self.model_loss = InteractionLoss()
 
-        self.decoder_optimizer = torch.optim.Adam(self.decoder.params(), lr=1e-4)
-        self.model_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
+        self.feelings_optimizer = torch.optim.Adam(self.feelings_model.params(), lr=1e-4)
+        self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
     def step(self, constant=100, energy=0, update=None):
         for x in self.list_obj:
@@ -45,8 +46,8 @@ class MainEngine(torch.nn.Module):
         indexs = self.define_action_index()
 
         for index in indexs:
-            self.model_optimizer.zero_grad()
-            self.decoder_optimizer.zero_grad()
+            self.interaction_optimizer.zero_grad()
+
             flag = True if np.random.uniform(0, 1) > 0.5 else False
             if flag:
                 action = self.list_obj[index[0]]
@@ -58,25 +59,30 @@ class MainEngine(torch.nn.Module):
             action.get_tensor_representation()
             acted.get_tensor_representation()
 
-            vec_energy_acted = acted.curr_energy * torch.ones(self.size)#self.decoder(acted.curr_energy)
-            vec_energy_action = action.curr_energy * torch.ones(self.size)#self.decoder(action.curr_energy)
-
-            #dec_loss = self.decoder_loss(vec_energy_acted, acted.curr_energy)
-            #dec_loss.backward(retain_graph=True)
-            #dec_loss = self.decoder_loss(vec_energy_action, acted.curr_energy)
-            #dec_loss.backward(retain_graph=True)
-            #self.decoder_optimizer.step()
-
-            result = self.interaction_model(acted.culture_condition + vec_energy_acted,
-                                            action.culture_condition + vec_energy_action)
+            result = self.interaction_model(acted.culture_condition * acted.curr_energy,
+                                            action.culture_condition * action.curr_energy)
 
             main_loss = self.model_loss(result, (acted.culture_condition,
                                                  action.culture_condition))
             main_loss.backward(retain_graph=True)
-            self.model_optimizer.step()
+            self.interaction_optimizer.step()
 
             acted.culture_condition = acted.education * result[0]
             action.culture_condition = action.education * result[1]
+
+        for obj in self.list_obj:
+            self.feelings_optimizer.zero_grad()
+
+            obj.get_tensor_representation()
+
+            result = self.feelings_model(obj.culture_condition * obj.curr_energy,
+                                         obj.feelings * obj.curr_energy)
+
+            main_loss = self.model_loss(result, (obj.culture_condition,
+                                                 obj.feelings))
+            main_loss.backward(retain_graph=True)
+            self.feelings_optimizer.step()
+            obj.feelings = obj.education * result[1]
 
     def define_action_index(self):
 

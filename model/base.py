@@ -9,6 +9,7 @@ class Object:
         self.curr_energy = -1
         self.education = np.random.uniform(0, e_level)
         self.culture_condition = np.random.normal(0, 1, size)
+        self.feelings = np.random.normal(0, 1, size)
         self.condition = 'numpy'
 
     def get_tensor_representation(self):
@@ -16,6 +17,7 @@ class Object:
             self.curr_energy = torch.tensor(self.curr_energy)
             self.education = torch.tensor(self.education)
             self.culture_condition = torch.from_numpy(self.culture_condition).float()
+            self.feelings = torch.from_numpy(self.feelings).float()
             self.condition = 'torch'
 
     def get_numpy_representation(self):
@@ -23,6 +25,7 @@ class Object:
             self.curr_energy = self.curr_energy.detach().cpu().numpy()
             self.education = self.education.detach().cpu().numpy()
             self.culture_condition = self.culture_condition.detach().cpu().numpy()
+            self.feelings = self.feelings.detach().cpu().numpy()
             self.condition = 'numpy'
 
     @staticmethod
@@ -36,12 +39,31 @@ class InteractionModel(nn.Module):
         self.step = step
         self.size = size
         self.sigmoid_1 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Tanh())
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid())
+
         self.sigmoid_2 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Tanh())
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid())
+
         self.sigmoid_3 = nn.Sequential(nn.Linear(self.size, self.size),
-                                       nn.Tanh())
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid(),
+                                       nn.Linear(self.size, self.size),
+                                       nn.Sigmoid())
+
         self.tanh = nn.Sequential(nn.Linear(self.size, self.size),
+                                  nn.Tanh(),
+                                  nn.Linear(self.size, self.size),
+                                  nn.Tanh(),
+                                  nn.Linear(self.size, self.size),
                                   nn.Tanh())
 
     def forward(self, acted, action):
