@@ -6,7 +6,7 @@ from .loss import InteractionLoss, EnergyDecoderLoss
 
 
 class MainEngine(torch.nn.Module):
-    def __init__(self, e_level=0.5, n_elements=100, size=100, threshold=0.1):
+    def __init__(self, e_level=0.5, n_elements=100, size=100, threshold=0.01):
         super(MainEngine, self).__init__()
         self.size = size
         self.n_elements = int(n_elements)
@@ -75,32 +75,36 @@ class MainEngine(torch.nn.Module):
 
             obj.get_tensor_representation()
 
-            result = self.feelings_model(obj.culture_condition * obj.curr_energy,
-                                         obj.feelings * obj.curr_energy)
+            result = self.feelings_model(obj.feelings * obj.curr_energy,
+                                         obj.culture_condition * obj.curr_energy)
 
-            main_loss = self.model_loss(result, (obj.culture_condition,
-                                                 obj.feelings))
+            main_loss = self.model_loss(result, (obj.feelings,
+                                                 obj.culture_condition))
             main_loss.backward(retain_graph=True)
             self.feelings_optimizer.step()
-            obj.feelings = obj.education * result[1]
+            obj.feelings = obj.education * result[0]
 
     def define_action_index(self):
 
         for x in self.list_obj:
             x.get_numpy_representation()
 
-        K = np.zeros((self.constant, self.constant))
+        Cult_corr = np.zeros((self.constant, self.constant))
+        Feel_corr = np.zeros((self.constant, self.constant))
+
         for i in range(self.constant):
             for j in range(self.constant):
-                 K[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition.T) / \
-                           np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
+                Cult_corr[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition.T) / \
+                                  np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
+                Feel_corr[i, j] = np.dot(self.list_obj[i].feelings, self.list_obj[j].feelings.T) / \
+                                  np.dot(self.list_obj[i].feelings, self.list_obj[i].feelings.T)
 
-        K = np.abs(K) > self.threshold
+        Cult_corr = (np.abs(Cult_corr) * np.abs(Feel_corr)) > self.threshold
 
         main_dict = {}
-        for i in range(K.shape[0]):
-            for j in range(i, K.shape[1]):
-                if K[i, j]:
+        for i in range(Cult_corr.shape[0]):
+            for j in range(i, Cult_corr.shape[1]):
+                if Cult_corr[i, j]:
                     main_dict[i] = j
 
         res = [[x, y] for x, y in zip(main_dict.keys(), main_dict.values())]
