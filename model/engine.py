@@ -59,6 +59,7 @@ class MainEngine(torch.nn.Module):
             action.get_tensor_representation()
             acted.get_tensor_representation()
 
+
             result = self.interaction_model(acted.culture_condition * acted.curr_energy,
                                             action.culture_condition * action.curr_energy)
 
