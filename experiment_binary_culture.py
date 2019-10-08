@@ -14,7 +14,8 @@ engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death
 
 vec1 = np.random.normal(0, 1, size)
 vec2 = np.random.normal(0, 1, size)
-engine.scenario(list_amt=[3000, 7000], list_cult=[vec1, vec2], depth_memory=100)
+engine.scenario(list_amt=[3000, 7000], list_cult=[vec1, vec2], list_class=[0,1], list_education=[0.5, 0.5],
+                list_fertility=[1, 1], depth_memory=100)
 all_amt = [len(engine.list_obj)]
 len_class0 = [3000]
 len_class1 = [7000]

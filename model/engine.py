@@ -7,32 +7,40 @@ from .loss import InteractionLoss
 
 
 class MainEngine(torch.nn.Module):
-    def __init__(self, e_level=0.5, n_elements=100, size=100, threshold=0.01, birth=0.1, death=0.1):
+    def __init__(self, e_level=None, n_elements=100, size=100, threshold=0.01, birth=0.1, death=0.1):
         super(MainEngine, self).__init__()
         self.size = size
         self.n_elements = int(n_elements)
         self.threshold = threshold
-        self.e_level = e_level
+
+        self.e_level = e_level if e_level is not None else [1]
         self.constant = None
         self.n_act_el = None
 
         self.interaction_model = InteractionModel(step=1e-3, size=self.size)
-        self.list_obj = [Object(size=size, e_level=e_level) for x in range(n_elements)]
+        self.list_obj = [Object(size=size, e_level=1) for x in range(n_elements)]
         for obj in self.list_obj:
             obj.age = np.random.randint(0, 100)
+        self.birth = birth
+        self.death = death
         self.demography = DemographyEnginer(birth, death)
         self.model_loss = InteractionLoss()
 
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
-    def scenario(self, list_cult=None, list_amt=None, list_class=[0,1], depth_memory=100):
-        if list_cult is not None and list_amt is not None:
-            assert len(list_amt) == len(list_cult), "Corr Error"
+    def scenario(self, list_cult=None, list_amt=None, list_class=None, list_education=None, list_fertility=None,
+                 depth_memory=100):
+        if list_cult is not None and list_amt is not None and list_education is not None:
+            assert len(list_amt) == len(list_cult) == len(list_education), "Corr Error"
+            self.e_level = list_education
             self.list_obj = []
             for indx, amt in enumerate(list_amt):
                 for i in range(int(amt)):
-                    self.list_obj.append(Object(size=self.size, e_level=self.e_level, cult_cond=list_cult[indx],
+                    self.list_obj.append(Object(size=self.size, e_level=self.e_level[indx], cult_cond=list_cult[indx],
                                                 self_class=list_class[indx], depth_memory=depth_memory))
+        if list_fertility is not None:
+            self.fertility = list_fertility
+            self.demography = DemographyEnginer(self.birth, self.death)
 
     def step(self, constant=100, energy=0, update=None, vecs=None):
 
@@ -100,7 +108,7 @@ class MainEngine(torch.nn.Module):
                 Cult_corr[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition.T) / \
                                   np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
 
-        Cult_corr = (np.abs(Cult_corr)) > self.threshold
+        Cult_corr = np.abs(Cult_corr) + np.random.normal(0, 0.05) > self.threshold
 
         main_dict = {}
         for i in range(Cult_corr.shape[0]):
