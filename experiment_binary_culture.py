@@ -10,7 +10,7 @@ size = 100
 threshold = 0
 n_elements = 50
 energy = 0.5
-engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold)
+engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.012, birth=0.019)
 
 vec1 = np.random.normal(0, 1, size)
 vec2 = np.random.normal(0, 1, size)

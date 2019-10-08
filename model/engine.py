@@ -1,7 +1,8 @@
 import torch
-from torch import nn
 import numpy as np
-from .base import Object, InteractionModel, DemographyEnginer
+from .base import Object
+from .interaction_module import InteractionModel
+from .demography_module import DemographyEnginer
 from .loss import InteractionLoss
 
 
@@ -17,6 +18,8 @@ class MainEngine(torch.nn.Module):
 
         self.interaction_model = InteractionModel(step=1e-3, size=self.size)
         self.list_obj = [Object(size=size, e_level=e_level) for x in range(n_elements)]
+        for obj in self.list_obj:
+            obj.age = np.random.randint(0, 100)
         self.demography = DemographyEnginer(birth, death)
         self.model_loss = InteractionLoss()
 
@@ -83,6 +86,7 @@ class MainEngine(torch.nn.Module):
             action.culture_condition = action.education * result[1]
         for obj in self.list_obj:
             obj.forward_memory()
+            obj.forward_age()
 
     def define_action_index(self):
 

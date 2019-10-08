@@ -1,0 +1,40 @@
+from torch import nn
+import numpy as np
+import copy
+import torch
+
+
+class DemographyEnginer(nn.Module):
+    def __init__(self, scale_b=0.2, scale_d=0.2, death_iter_border=100):
+        super(DemographyEnginer, self).__init__()
+        self.existing_scale = scale_b
+        self.death_scale = scale_d #scale_b * (60 - 14) / 100
+        print(self.death_scale)
+        self.death_iter_border = death_iter_border
+        self.death_at_birth = 0.05
+
+        self.dem_curve = lambda x: (1 - self.death_at_birth) * x / self.death_iter_border + self.death_at_birth
+        self.birth_curve = lambda x: True if 14 < x < 60 else False
+
+    def forward(self, objs):
+        def noise(x, y):
+            return torch.from_numpy(np.random.normal(0, 0.05, y)).float() if x == 'torch' else np.random.normal(0, 0.05, y)
+
+        lenn = len(objs)
+        for indx in (np.random.randint(0, lenn, int(np.random.uniform(0, self.existing_scale) * lenn))):
+            if self.birth_curve(objs[indx].age):
+                new_obj = copy.copy(objs[indx])
+                new_obj.age = 0
+                new_obj.culture_condition += noise(new_obj.condition, new_obj.size)
+                objs.append(new_obj)
+
+        del_indexs = np.unique(np.random.randint(0, lenn, (int(np.random.uniform(0, self.death_scale) * lenn))))
+        for indx in range(len(del_indexs)):
+            if np.random.uniform(0, 1) < self.dem_curve(objs[del_indexs[indx]].age):
+                del_indexs[indx] = 0
+        del_indexs = - np.sort(-np.unique(del_indexs))
+        del_indexs = del_indexs[:-1]
+
+        for indx in range(len(del_indexs)):
+                del objs[del_indexs[indx]]
+        return objs
