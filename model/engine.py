@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from .base import Object
+from .base import Object, CultureSpace
 from .interaction_module import InteractionModel
 from .demography_module import DemographyEnginer
 from .loss import InteractionLoss
@@ -21,11 +21,14 @@ class MainEngine(torch.nn.Module):
         self.list_obj = [Object(size=size, e_level=1) for x in range(n_elements)]
         for obj in self.list_obj:
             obj.age = np.random.randint(0, 100)
+
         self.birth = birth
         self.death = death
         self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death)
-        self.model_loss = InteractionLoss()
+        self.culture_space = None
+        self.fertility = None
 
+        self.model_loss = InteractionLoss()
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
     def scenario(self, list_cult=None, list_amt=None, list_class=None, list_education=None, list_fertility=None,
@@ -46,6 +49,8 @@ class MainEngine(torch.nn.Module):
         if list_fertility is not None:
             self.fertility = list_fertility
             self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death, culture_fertility=self.fertility)
+
+        self.culture_space = CultureSpace(cultures=list_cult, culture_classes=list_class)
 
     def step(self, constant=100, energy=0, vecs=None):
 
@@ -81,32 +86,24 @@ class MainEngine(torch.nn.Module):
 
             main_loss = self.model_loss(result, (acted.culture_condition,
                                                  action.culture_condition))
-            main_loss.backward(retain_graph=True)
-            self.interaction_optimizer.step()
 
-            acted.culture_condition = acted.education * result[0]
-            action.culture_condition = action.education * result[1]
+            print(main_loss.detach().numpy())
+            if main_loss.detach().numpy() != None:
+                main_loss.backward(retain_graph=True)
+                self.interaction_optimizer.step()
+
+                acted.culture_condition = acted.education * result[0]
+                action.culture_condition = action.education * result[1]
+
+            #print(index)
+            #print(acted.culture_condition)
+            #print(action.culture_condition)
 
         for obj in self.list_obj:
             obj.forward_memory()
             obj.forward_age()
+            #obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
 
-    def define_action_index(self, tolerance=False):
-        main_dict = {}
-        if not tolerance:
-            Cult_corr = torch.zeros((self.constant, self.constant))
-
-            for i in range(self.constant):
-                for j in range(self.constant):
-                    Cult_corr[i, j] = torch.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition) / \
-                                      torch.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
-
-            Cult_corr = torch.abs(Cult_corr) + torch.rand(1)*0.05 > self.threshold
-
-            for i in range(Cult_corr.shape[0]):
-                for j in range(i, Cult_corr.shape[1]):
-                    if Cult_corr[i, j]:
-                        main_dict[i] = j
-
-        res = [[x, y] for x, y in zip(main_dict.keys(), main_dict.values())]
+    def define_action_index(self):
+        res = np.random.randint(0, len(self.list_obj), (self.constant, 2)).tolist()
         return res
