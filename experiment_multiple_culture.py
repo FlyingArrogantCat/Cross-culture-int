@@ -21,8 +21,10 @@ vec4 = np.random.normal(0, 0.3, size) + [0 if x % 2 == 0 and x > size/2 else 1 f
 
 engine.scenario(list_amt=[1500, 2000, 700, 4000], list_cult=[vec1, vec2, vec3, vec4], list_class=[0, 1, 2, 3],
                 list_education=[0.5, 0.5, 0.5, 0.5],
-                list_fertility=[1, 1, 1, 1], depth_memory=100)
+                list_fertility=[1, 1, 1, 1], depth_memory=0)
 
+for x in engine.list_obj:
+    x.age = np.random.randint(0, 60)
 all_amt = [len(engine.list_obj)]
 weigths = []
 
@@ -37,7 +39,7 @@ for i in range(n_steps):
     print(i)
     engine.step(indx=i, energy=energy)
 
-    all_amt.append(len(engine.list_objs))
+    all_amt.append(len(engine.list_obj))
     fig, axes = plt.subplots(1, 3, figsize=(15, 8))
 
     axes[0].plot(all_amt)
@@ -55,9 +57,12 @@ for i in range(n_steps):
     for x in hist_data:
         counter[x] += 1
     counter = dict(counter)
-    weigths.append( list(counter.values()) / len(hist_data))
+    weigths.append([x / len(hist_data) for x in counter.values()])
+    print(weigths[-1])
     for sclass in engine.list_class:
-        axes[2].plot(weigths[:,sclass], label=f'class {sclass}w')
+        temp_weigths = np.array(weigths)
+
+        axes[2].plot(temp_weigths[:, sclass], label=f'class {sclass}w')
     axes[2].set_title('weights number of people ')
     axes[2].set_ylabel('#')
     axes[2].set_xlabel('Steps')

@@ -15,7 +15,7 @@ class DemographyEnginer(nn.Module):
         self.fertility = culture_fertility
 
         self.dem_curve = lambda x: (1 - self.death_at_birth) * x / self.death_iter_border + self.death_at_birth
-        self.birth_curve = lambda x: True if 14 < x < 60 else False
+        self.birth_curve = lambda x: True if 14 < x < 70 else False
 
     def forward(self, objs):
         lenn = len(objs)
@@ -27,14 +27,14 @@ class DemographyEnginer(nn.Module):
                                          depth_memory=objs[indx].depth_memory, self_class=objs[indx].sclass)
                         new_obj.age = 0
                         new_obj.culture_condition = objs[indx].culture_condition.clone().detach()
-                        new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float())
+                        new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.1, new_obj.size)).float())
                         objs.append(new_obj)
                 else:
                     new_obj = Object(size=objs[indx].size, e_level=objs[indx].education,
                                      depth_memory=objs[indx].depth_memory, self_class=objs[indx].sclass)
                     new_obj.age = 0
                     new_obj.culture_condition = objs[indx].culture_condition.clone().detach()
-                    new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float())
+                    new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.1, new_obj.size)).float())
                     objs.append(new_obj)
 
         del_indexs = np.unique(np.random.randint(0, lenn, (int(np.random.uniform(0, self.death_scale) * lenn))))

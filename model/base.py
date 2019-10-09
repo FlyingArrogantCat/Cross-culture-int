@@ -20,7 +20,7 @@ class Object:
 
         self.depth_memory = depth_memory
         if self.depth_memory != 0:
-            self.culture_memory =torch.from_numpy(np.zeros((depth_memory, size))).float()
+            self.culture_memory = torch.from_numpy(np.zeros((depth_memory, size))).float()
         else:
             self.culture_memory = None
         self.memory_indx = 0

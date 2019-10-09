@@ -60,11 +60,11 @@ class MainEngine(torch.nn.Module):
         train_classifier_y = [x.sclass for x in self.list_obj]
         self.culture_space = CultureSpace(cultures=train_classifier_x, culture_classes=train_classifier_y)
 
-    def step(self, indx, constant=100, energy=0):
+    def step(self, indx, constant=1000, energy=0):
         for obj in self.list_obj:
             obj.forward_memory()
             obj.forward_age()
-            obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
+            obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().numpy()])[0]
 
         self.demography(self.list_obj)
 
