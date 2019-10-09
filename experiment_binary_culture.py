@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 from pathlib import Path
+import torch
 
 
 n_steps = 500
@@ -68,7 +69,9 @@ for i in range(n_steps):
 
     if i % 20 == 0:
         plt.savefig(f'./images/experiment_{date_now}/{i}_graph.png')
+        torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoints_{i}.png')
     plt.savefig(f'./images/experiment_{date_now}/last_graph.png')
 
+    torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoints_last.png')
 
 print('Done!')
