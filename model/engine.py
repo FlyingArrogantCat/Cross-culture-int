@@ -27,6 +27,9 @@ class MainEngine(torch.nn.Module):
         self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death)
         self.culture_space = None
         self.fertility = None
+        self.list_cult = None
+        self.list_class = None
+        self.amt = None
 
         self.model_loss = InteractionLoss()
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
@@ -35,8 +38,11 @@ class MainEngine(torch.nn.Module):
                  depth_memory=100):
 
         if list_cult is not None and list_amt is not None and list_education is not None:
+            assert len(list_amt) == len(list_cult) == len(list_education) == len(list_fertility), "Corr Error"
 
-            assert len(list_amt) == len(list_cult) == len(list_education), "Corr Error"
+            self.list_cult = list_cult
+            self.list_class = list_class
+            self.amt = list_amt
 
             self.e_level = list_education
             self.list_obj = []

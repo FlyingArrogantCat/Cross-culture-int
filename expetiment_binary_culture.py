@@ -11,10 +11,10 @@ size = 100
 threshold = 0
 n_elements = 50
 energy = 0.5
-engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.0115, birth=0.019)
+engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.0125, birth=0.019)
 
-vec1 = np.random.normal(0, 1, size) + [0 if x%2 == 0 else 1 for x in range(size)]
-vec2 = np.random.normal(0, 1, size) + [1 if x%2 == 0 else 0 for x in range(size)]
+vec1 = np.random.normal(0, 0.5, size) + [0 if x % 2 == 0 else 1 for x in range(size)]
+vec2 = np.random.normal(0, 0.5, size) + [1 if x % 2 == 0 else 0 for x in range(size)]
 engine.scenario(list_amt=[3000, 7000], list_cult=[vec1, vec2], list_class=[0, 1], list_education=[0.5, 0.5],
                 list_fertility=[1, 1], depth_memory=100)
 all_amt = [len(engine.list_obj)]
