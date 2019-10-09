@@ -2,13 +2,14 @@ from torch import nn
 import numpy as np
 import copy
 import torch
+from .base import Object
 
 
 class DemographyEnginer(nn.Module):
     def __init__(self, scale_b=0.2, scale_d=0.2, death_iter_border=100, culture_fertility=None):
         super(DemographyEnginer, self).__init__()
         self.existing_scale = scale_b
-        self.death_scale = scale_d #scale_b * (60 - 14) / 100
+        self.death_scale = scale_d
         self.death_iter_border = death_iter_border
         self.death_at_birth = 0.05
         self.fertility = culture_fertility
@@ -22,14 +23,17 @@ class DemographyEnginer(nn.Module):
             if self.birth_curve(objs[indx].age):
                 if self.fertility is not None:
                     if np.random.uniform(0, 1) < self.fertility[objs[indx].sclass]:
-                        new_obj = copy.copy(objs[indx])
+                        new_obj = Object(size=objs[indx].size, e_level=objs[indx].education,
+                                         depth_memory=objs[indx].depth_memory, self_class=objs[indx].sclass)
                         new_obj.age = 0
-                        new_obj.culture_condition += torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float()
+                        new_obj.culture_condition = objs[indx].culture_condition.clone().detach()
+                        new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float())
                         objs.append(new_obj)
                 else:
-                    new_obj = copy.copy(objs[indx])
+                    new_obj = Object(size=objs[indx].size, e_level=objs[indx].education,
+                                     depth_memory=objs[indx].depth_memory, self_class=objs[indx].sclass)
                     new_obj.age = 0
-                    new_obj.culture_condition.grad_zero()
+                    new_obj.culture_condition = objs[indx].culture_condition.clone().detach()
                     new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float())
                     objs.append(new_obj)
 

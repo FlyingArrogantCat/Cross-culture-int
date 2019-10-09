@@ -50,13 +50,16 @@ class MainEngine(torch.nn.Module):
             self.fertility = list_fertility
             self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death, culture_fertility=self.fertility)
 
-        self.culture_space = CultureSpace(cultures=list_cult, culture_classes=list_class)
+        train_classifier_x = [x.culture_condition.numpy() for x in self.list_obj]
+        train_classifier_y = [x.sclass for x in self.list_obj]
+        self.culture_space = CultureSpace(cultures=train_classifier_x, culture_classes=train_classifier_y)
 
-    def step(self, indx, constant=100, energy=0, vecs=None):
+    def step(self, indx, constant=100, energy=0):
+        for obj in self.list_obj:
+            obj.forward_memory()
+            obj.forward_age()
+            obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
 
-        if vecs is not None:
-            for obj in self.list_obj:
-                obj.sclass(vecs[0], vecs[1])
         self.demography(self.list_obj)
 
         for x in self.list_obj:
@@ -94,10 +97,6 @@ class MainEngine(torch.nn.Module):
             acted.culture_condition = acted.education * result[0]
             action.culture_condition = action.education * result[1]
 
-        for obj in self.list_obj:
-            obj.forward_memory()
-            obj.forward_age()
-            obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
 
     def define_action_index(self):
         res = np.random.randint(0, len(self.list_obj), (self.constant, 2)).tolist()

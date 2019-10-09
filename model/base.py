@@ -11,7 +11,7 @@ class Object:
         '''culture params'''
         self.curr_energy = torch.tensor(-1)
         self.sclass = self_class
-        self.education = torch.tensor(e_level + np.random.normal(0, 0.2)).float()
+        self.education = torch.tensor(e_level + np.random.normal(0, 0.2)).clone().detach().float()
 
         if cult_cond is None:
             self.culture_condition = torch.from_numpy(np.random.normal(0, 1, size)).float()
@@ -52,18 +52,6 @@ class Object:
 
     def forward_age(self):
         self.age += 1
-
-    def sclass(self, vec1, vec2):
-        if self.condition == 'numpy':
-            vec = (vec1 + vec2) - self.culture_condition
-        else:
-            vec = (vec1 + vec2) - self.culture_condition.detach().cpu().numpy()
-        norm1 = np.linalg.norm(vec1 - vec)
-        norm2 = np.linalg.norm(vec2 - vec)
-        if norm1 > norm2:
-            self.sclass = 0
-        if norm2 > norm1:
-            self.sclass = 1
 
 
 class CultureSpace:

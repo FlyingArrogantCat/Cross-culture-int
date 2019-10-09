@@ -11,10 +11,10 @@ size = 100
 threshold = 0
 n_elements = 50
 energy = 0.5
-engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.012, birth=0.019)
+engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.0115, birth=0.019)
 
-vec1 = np.random.normal(0, 1, size)
-vec2 = np.random.normal(0, 1, size)
+vec1 = np.random.normal(0, 1, size) + [0 if x%2 == 0 else 1 for x in range(size)]
+vec2 = np.random.normal(0, 1, size) + [1 if x%2 == 0 else 0 for x in range(size)]
 engine.scenario(list_amt=[3000, 7000], list_cult=[vec1, vec2], list_class=[0, 1], list_education=[0.5, 0.5],
                 list_fertility=[1, 1], depth_memory=100)
 all_amt = [len(engine.list_obj)]
@@ -41,7 +41,7 @@ for i in range(n_steps):
     len_class0w.append(len([x for x in engine.list_obj if x.sclass == 0])/len(engine.list_obj))
     len_class1w.append(len([x for x in engine.list_obj if x.sclass == 1])/len(engine.list_obj))
     mean_norm.append(np.mean([np.linalg.norm(x.culture_condition.detach().numpy()) for x in engine.list_obj]))
-    fig, axes = plt.subplots(1, 4, figsize=(20, 8))
+    fig, axes = plt.subplots(1, 4, figsize=(15, 8))
 
     axes[0].plot(all_amt)
     axes[0].set_title('Number of people')
@@ -69,9 +69,10 @@ for i in range(n_steps):
 
     if i % 20 == 0:
         plt.savefig(f'./images/experiment_{date_now}/{i}_graph.png')
-        torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoints_{i}.png')
+        torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoint_{i}.pth')
+        engine.interaction_model.load_state_dict(torch.load(f'./images/experiment_{date_now}/checkpoint_{i}.pth'))
     plt.savefig(f'./images/experiment_{date_now}/last_graph.png')
 
-    torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoints_last.png')
+    torch.save(engine.interaction_model.state_dict(), f'./images/experiment_{date_now}/checkpoint_last.pth')
 
 print('Done!')
