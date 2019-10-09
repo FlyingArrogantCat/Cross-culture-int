@@ -9,7 +9,6 @@ class DemographyEnginer(nn.Module):
         super(DemographyEnginer, self).__init__()
         self.existing_scale = scale_b
         self.death_scale = scale_d #scale_b * (60 - 14) / 100
-        print(self.death_scale)
         self.death_iter_border = death_iter_border
         self.death_at_birth = 0.05
         self.fertility = culture_fertility
@@ -30,7 +29,8 @@ class DemographyEnginer(nn.Module):
                 else:
                     new_obj = copy.copy(objs[indx])
                     new_obj.age = 0
-                    new_obj.culture_condition += torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float()
+                    new_obj.culture_condition.grad_zero()
+                    new_obj.culture_condition.add_(torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float())
                     objs.append(new_obj)
 
         del_indexs = np.unique(np.random.randint(0, lenn, (int(np.random.uniform(0, self.death_scale) * lenn))))

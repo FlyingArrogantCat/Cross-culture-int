@@ -52,7 +52,7 @@ class MainEngine(torch.nn.Module):
 
         self.culture_space = CultureSpace(cultures=list_cult, culture_classes=list_class)
 
-    def step(self, constant=100, energy=0, vecs=None):
+    def step(self, indx, constant=100, energy=0, vecs=None):
 
         if vecs is not None:
             for obj in self.list_obj:
@@ -84,11 +84,12 @@ class MainEngine(torch.nn.Module):
             result = self.interaction_model(acted.culture_condition * acted.curr_energy,
                                             action.culture_condition * action.curr_energy)
 
-            main_loss = self.model_loss(result, (acted.culture_condition,
-                                                 action.culture_condition))
+            if indx < 20:
+                main_loss = self.model_loss(result, (acted.culture_condition,
+                                                     action.culture_condition))
 
-            main_loss.backward(retain_graph=True)
-            self.interaction_optimizer.step()
+                main_loss.backward(retain_graph=True)
+                self.interaction_optimizer.step()
 
             acted.culture_condition = acted.education * result[0]
             action.culture_condition = action.education * result[1]
@@ -96,7 +97,7 @@ class MainEngine(torch.nn.Module):
         for obj in self.list_obj:
             obj.forward_memory()
             obj.forward_age()
-            #obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
+            obj.sclass = self.culture_space.predict_culture([obj.culture_condition.detach().cpu().numpy()])[0]
 
     def define_action_index(self):
         res = np.random.randint(0, len(self.list_obj), (self.constant, 2)).tolist()

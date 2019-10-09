@@ -32,7 +32,7 @@ p.mkdir()
 
 for i in range(n_steps):
     print(i)
-    engine.step(energy=energy)
+    engine.step(indx=i, energy=energy)
 
     all_amt.append(len(engine.list_obj))
     len_class0.append(len([x for x in engine.list_obj if x.sclass == 0]))
