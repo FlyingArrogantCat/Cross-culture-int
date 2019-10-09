@@ -87,17 +87,11 @@ class MainEngine(torch.nn.Module):
             main_loss = self.model_loss(result, (acted.culture_condition,
                                                  action.culture_condition))
 
-            print(main_loss.detach().numpy())
-            if main_loss.detach().numpy() != None:
-                main_loss.backward(retain_graph=True)
-                self.interaction_optimizer.step()
+            main_loss.backward(retain_graph=True)
+            self.interaction_optimizer.step()
 
-                acted.culture_condition = acted.education * result[0]
-                action.culture_condition = action.education * result[1]
-
-            #print(index)
-            #print(acted.culture_condition)
-            #print(action.culture_condition)
+            acted.culture_condition = acted.education * result[0]
+            action.culture_condition = action.education * result[1]
 
         for obj in self.list_obj:
             obj.forward_memory()
