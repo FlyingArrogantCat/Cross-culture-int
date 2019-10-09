@@ -23,26 +23,31 @@ class MainEngine(torch.nn.Module):
             obj.age = np.random.randint(0, 100)
         self.birth = birth
         self.death = death
-        self.demography = DemographyEnginer(birth, death)
+        self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death)
         self.model_loss = InteractionLoss()
 
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
     def scenario(self, list_cult=None, list_amt=None, list_class=None, list_education=None, list_fertility=None,
                  depth_memory=100):
+
         if list_cult is not None and list_amt is not None and list_education is not None:
+
             assert len(list_amt) == len(list_cult) == len(list_education), "Corr Error"
+
             self.e_level = list_education
             self.list_obj = []
+
             for indx, amt in enumerate(list_amt):
                 for i in range(int(amt)):
                     self.list_obj.append(Object(size=self.size, e_level=self.e_level[indx], cult_cond=list_cult[indx],
                                                 self_class=list_class[indx], depth_memory=depth_memory))
+
         if list_fertility is not None:
             self.fertility = list_fertility
-            self.demography = DemographyEnginer(self.birth, self.death)
+            self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death, culture_fertility=self.fertility)
 
-    def step(self, constant=100, energy=0, update=None, vecs=None):
+    def step(self, constant=100, energy=0, vecs=None):
 
         if vecs is not None:
             for obj in self.list_obj:
@@ -50,20 +55,12 @@ class MainEngine(torch.nn.Module):
         self.demography(self.list_obj)
 
         for x in self.list_obj:
-            if x.condition == 'numpy':
-                x.curr_energy = np.random.uniform(0, energy)
-            else:
                 x.curr_energy = torch.FloatTensor(1).uniform_(0, energy)
-
-        if update is not None:
-            if self.list_obj[0].condition == 'numpy':
-                self.list_obj[0].curr_energy = update
-            else:
-                self.list_obj[0].curr_energy = torch.tensor(update)
 
         self.constant = int(constant)
         if self.constant > self.n_elements:
             self.constant = int(self.n_elements / 2)
+
         self.n_act_el = np.random.randint(0, self.n_elements, size=self.constant)
 
         indexs = self.define_action_index()
@@ -79,9 +76,6 @@ class MainEngine(torch.nn.Module):
                 action = self.list_obj[index[1]]
                 acted = self.list_obj[index[0]]
 
-            action.get_tensor_representation()
-            acted.get_tensor_representation()
-
             result = self.interaction_model(acted.culture_condition * acted.curr_energy,
                                             action.culture_condition * action.curr_energy)
 
@@ -92,29 +86,27 @@ class MainEngine(torch.nn.Module):
 
             acted.culture_condition = acted.education * result[0]
             action.culture_condition = action.education * result[1]
+
         for obj in self.list_obj:
             obj.forward_memory()
             obj.forward_age()
 
-    def define_action_index(self):
-
-        for x in self.list_obj:
-            x.get_numpy_representation()
-
-        Cult_corr = np.zeros((self.constant, self.constant))
-
-        for i in range(self.constant):
-            for j in range(self.constant):
-                Cult_corr[i, j] = np.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition.T) / \
-                                  np.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
-
-        Cult_corr = np.abs(Cult_corr) + np.random.normal(0, 0.05) > self.threshold
-
+    def define_action_index(self, tolerance=False):
         main_dict = {}
-        for i in range(Cult_corr.shape[0]):
-            for j in range(i, Cult_corr.shape[1]):
-                if Cult_corr[i, j]:
-                    main_dict[i] = j
+        if not tolerance:
+            Cult_corr = torch.zeros((self.constant, self.constant))
+
+            for i in range(self.constant):
+                for j in range(self.constant):
+                    Cult_corr[i, j] = torch.dot(self.list_obj[i].culture_condition, self.list_obj[j].culture_condition) / \
+                                      torch.dot(self.list_obj[i].culture_condition, self.list_obj[i].culture_condition.T)
+
+            Cult_corr = torch.abs(Cult_corr) + torch.rand(1)*0.05 > self.threshold
+
+            for i in range(Cult_corr.shape[0]):
+                for j in range(i, Cult_corr.shape[1]):
+                    if Cult_corr[i, j]:
+                        main_dict[i] = j
 
         res = [[x, y] for x, y in zip(main_dict.keys(), main_dict.values())]
         return res

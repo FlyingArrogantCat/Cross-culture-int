@@ -18,10 +18,6 @@ class DemographyEnginer(nn.Module):
         self.birth_curve = lambda x: True if 14 < x < 60 else False
 
     def forward(self, objs):
-        def noise(x, y):
-            return torch.from_numpy(np.random.normal(0, 0.05, y)).float() if x == 'torch' else \
-                np.random.normal(0, 0.05, y)
-
         lenn = len(objs)
         for indx in (np.random.randint(0, lenn, int(np.random.uniform(0, self.existing_scale) * lenn))):
             if self.birth_curve(objs[indx].age):
@@ -29,12 +25,12 @@ class DemographyEnginer(nn.Module):
                     if np.random.uniform(0, 1) < self.fertility[objs[indx].sclass]:
                         new_obj = copy.copy(objs[indx])
                         new_obj.age = 0
-                        new_obj.culture_condition += noise(new_obj.condition, new_obj.size)
+                        new_obj.culture_condition += torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float()
                         objs.append(new_obj)
                 else:
                     new_obj = copy.copy(objs[indx])
                     new_obj.age = 0
-                    new_obj.culture_condition += noise(new_obj.condition, new_obj.size)
+                    new_obj.culture_condition += torch.from_numpy(np.random.normal(0, 0.05, new_obj.size)).float()
                     objs.append(new_obj)
 
         del_indexs = np.unique(np.random.randint(0, lenn, (int(np.random.uniform(0, self.death_scale) * lenn))))
