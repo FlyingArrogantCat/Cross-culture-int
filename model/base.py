@@ -40,7 +40,7 @@ class Object:
         self.culture_memory[self.memory_indx] = self.culture_condition
         self.remind_memory()
 
-    def remind_memory(self, param=0.5):
+    def remind_memory(self, param=0.3):
         if np.random.uniform(0, 1) > param:
             return 0
         else:

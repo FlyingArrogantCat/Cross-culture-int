@@ -35,7 +35,7 @@ class MainEngine(torch.nn.Module):
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
 
     def scenario(self, list_cult=None, list_amt=None, list_class=None, list_education=None, list_fertility=None,
-                 depth_memory=100):
+                 depth_memory=100, give_mem_child=False):
 
         if list_cult is not None and list_amt is not None and list_education is not None:
             assert len(list_amt) == len(list_cult) == len(list_education) == len(list_fertility), "Corr Error"
@@ -55,12 +55,18 @@ class MainEngine(torch.nn.Module):
         if list_fertility is not None:
             self.fertility = list_fertility
             self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death, culture_fertility=self.fertility)
+        if give_mem_child:
+            self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death,
+                                                give_memory_child=give_mem_child)
+        if give_mem_child and list_fertility is not None:
+            self.demography = DemographyEnginer(scale_b=self.birth, scale_d=self.death,
+                                                culture_fertility=self.fertility, give_memory_child=give_mem_child)
 
         train_classifier_x = [x.culture_condition.numpy() for x in self.list_obj]
         train_classifier_y = [x.sclass for x in self.list_obj]
         self.culture_space = CultureSpace(cultures=train_classifier_x, culture_classes=train_classifier_y)
 
-    def step(self, indx, constant=1000, energy=0):
+    def step(self, indx, constant=300, energy=0):
         for obj in self.list_obj:
             obj.forward_memory()
             obj.forward_age()
@@ -69,11 +75,12 @@ class MainEngine(torch.nn.Module):
         self.demography(self.list_obj)
 
         for x in self.list_obj:
-                x.curr_energy = torch.FloatTensor(1).uniform_(0, energy)
+            x.curr_energy = torch.tensor(energy)
+        #        x.curr_energy = torch.FloatTensor(1).uniform_(0, energy)
 
         self.constant = int(constant)
         if self.constant > self.n_elements:
-            self.constant = int(self.n_elements / 2)
+            self.constant = int(self.n_elements)
 
         self.n_act_el = np.random.randint(0, self.n_elements, size=self.constant)
 
@@ -93,16 +100,15 @@ class MainEngine(torch.nn.Module):
             result = self.interaction_model(acted.culture_condition * acted.curr_energy,
                                             action.culture_condition * action.curr_energy)
 
-            if indx < 20:
+            if indx < 5:
                 main_loss = self.model_loss(result, (acted.culture_condition,
                                                      action.culture_condition))
 
                 main_loss.backward(retain_graph=True)
                 self.interaction_optimizer.step()
-
-            acted.culture_condition = acted.education * result[0]
-            action.culture_condition = action.education * result[1]
-
+            if indx >= 5:
+                acted.culture_condition = acted.education * result[0]
+                action.culture_condition = action.education * result[1]
 
     def define_action_index(self):
         res = np.random.randint(0, len(self.list_obj), (self.constant, 2)).tolist()
