@@ -7,13 +7,13 @@ import torch
 import collections
 
 
-name_experiment = 'low_inter'
+name_experiment = 'test'
 n_steps = 500
 size = 100
 threshold = 0
 n_elements = 0
-energy = 40
-engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0.013*5, birth=0.0185*5)
+energy = 500
+engine = MainEngine(n_elements=n_elements, size=size, threshold=threshold, death=0, birth=0)#death=0.013, birth=0.0115)
 
 vec1 = np.random.normal(0, 0.3, size) + [10 if x < size/3 else 0 for x in range(size)]
 vec2 = np.random.normal(0, 0.3, size) + [10 if size/3 < x < 2 * size/3 else 0 for x in range(size)]
@@ -38,12 +38,15 @@ date_now = date_now.replace(' ', '_')
 p = Path(f'./images/{name_experiment}_experiment_{date_now}/')
 p.mkdir()
 
+
+#engine.interaction_model.load_state_dict(torch.load('/home/fedor/projects/Master-project/checkpoint.pth'))
+
 for i in range(n_steps):
     print(i)
     if i== 0:
-        engine.step(indx=i, constant=50, energy=energy)
+        engine.step(indx=i, constant=500, energy=energy)
     else:
-        engine.step(indx=i, constant=50, energy=energy)
+        engine.step(indx=i, constant=500, energy=energy)
 
     all_amt.append(len(engine.list_obj))
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
@@ -81,10 +84,10 @@ for i in range(n_steps):
 
     if i % 20 == 0:
         plt.savefig(f'./images/{name_experiment}_experiment_{date_now}/{i}_graph.png')
-        torch.save(engine.interaction_model.state_dict(), f'./images/{name_experiment}_experiment_{date_now}/checkpoint_{i}.pth')
-        engine.interaction_model.load_state_dict(torch.load(f'./images/{name_experiment}_experiment_{date_now}/checkpoint_{i}.pth'))
+        #torch.save(engine.interaction_model.state_dict(), f'./images/{name_experiment}_experiment_{date_now}/checkpoint_{i}.pth')
+        #engine.interaction_model.load_state_dict(torch.load(f'./images/{name_experiment}_experiment_{date_now}/checkpoint_{i}.pth'))
     plt.savefig(f'./images/{name_experiment}_experiment_{date_now}/last_graph.png')
-
+    plt.close(fig)
     torch.save(engine.interaction_model.state_dict(), f'./images/{name_experiment}_experiment_{date_now}/checkpoint_last.pth')
 
 print('Done!')

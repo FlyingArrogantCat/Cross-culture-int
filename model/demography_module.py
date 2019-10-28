@@ -19,6 +19,9 @@ class DemographyEnginer(nn.Module):
         self.give_memory_child = give_memory_child
 
     def forward(self, objs):
+
+        if self.existing_scale == 0 and self.death_scale == 0:
+            return objs
         lenn = len(objs)
         for indx in (np.random.randint(0, lenn, int(np.random.uniform(0, self.existing_scale) * lenn))):
             if self.birth_curve(objs[indx].age):

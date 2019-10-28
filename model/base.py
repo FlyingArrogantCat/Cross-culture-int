@@ -28,7 +28,7 @@ class Object:
         '''demography params'''
         self.age = 0
 
-    def forward_memory(self):
+    def forward_memory(self, param=0.2):
         if self.depth_memory == 0:
             return 0
         if self.memory_indx + 1 > self.depth_memory - 1:
@@ -38,9 +38,9 @@ class Object:
             self.memory_indx = self.memory_indx + 1
 
         self.culture_memory[self.memory_indx] = self.culture_condition
-        self.remind_memory()
+        self.remind_memory(param)
 
-    def remind_memory(self, param=0.3):
+    def remind_memory(self, param=0.2):
         if np.random.uniform(0, 1) > param:
             return 0
         else:
