@@ -24,4 +24,4 @@ class InteractionLoss(nn.Module):
 
     @staticmethod
     def cross_entropy(change, res, gt):
-        return torch.sum(change * torch.log(torch.abs(res / gt)))
+        return torch.sum(change * torch.log(torch.abs(res / (gt + 1))))
