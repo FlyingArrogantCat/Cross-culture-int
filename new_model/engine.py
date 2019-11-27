@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from .base import Agent, CultureSpace
+from new_model.agent import Agent, CultureSpace
 from .interaction_module import InteractionModel, StaticInteractionModel
 from .demography_module import DemographyEnginer
-from .loss import InteractionLoss
+from model.loss import InteractionLoss
 
 
 class MainEngine(torch.nn.Module):
@@ -82,8 +82,6 @@ class MainEngine(torch.nn.Module):
         self.constant = int(constant)
         if self.constant > self.n_elements:
             self.constant = int(self.n_elements)
-
-        self.n_act_el = np.random.randint(0, self.n_elements, size=self.constant)
 
         indexs = self.define_action_index()
 

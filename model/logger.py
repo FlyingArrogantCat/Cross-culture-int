@@ -31,7 +31,7 @@ class logger(torch.nn.Module):
         self.global_step = 0
 
     def add_scalar(self, tag_name, scalar, global_step=None):
-        if global_step is not None: global_step=self.global_step
+        if global_step is not None: global_step = self.global_step
         self.writer.add_scalar(tag_name, scalar_value=scalar, global_step=global_step)
 
     def add_image(self, tag_name, image, global_step=None):
