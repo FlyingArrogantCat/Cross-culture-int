@@ -3,15 +3,19 @@ from torch import nn
 import json
 from model.logger import logger
 import numpy as np
-from .engine import *
+from model.engine import *
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 class EnergyExperiment(torch.nn.Module):
-    def __init__(self, name='TestEnergyExperiment', size_space=100, experiment_path='./experiments/', demography_flag=False):
+    def __init__(self, name='TestEnergyExperiment', size_space=100, experiment_path='./experiments/', demography_flag=False,
+                 depth_memory=100):
         super(EnergyExperiment, self).__init__()
+
+        if not Path(experiment_path).is_dir():
+            Path(experiment_path).mkdir()
 
         self.main_apth = Path(experiment_path + name)
         if not self.main_apth.is_dir():
@@ -31,8 +35,11 @@ class EnergyExperiment(torch.nn.Module):
         else:
             self.engine = MainEngine(n_elements=0, size=size_space, death=0, birth=0)
 
-        self.engine.scenario(list_amt=list_amt, list_cult=[vec1, vec2], list_class=[0, 1], depth_memory=10,
-                             list_education=[0.5, 0.5], list_fertility=[1, 1], give_mem_child=False)
+        print(self.engine.birth)
+        print(self.engine.death)
+
+        self.engine.scenario(list_amt=list_amt, list_cult=[vec1, vec2], list_class=[0, 1], depth_memory=depth_memory,
+                             list_education=[0.5, 0.5], list_fertility=[1, 1], give_mem_child=True)
 
         for x in self.engine.list_obj:
             x.age = np.random.randint(0, 60)
@@ -77,22 +84,25 @@ class EnergyExperiment(torch.nn.Module):
                 axes[1].set_xlabel('Steps')
                 axes[1].legend()
 
-                self.engine.step(indx=indx, constant=int(len(self.engine.list_obj) * 0.3),
+                self.engine.step(indx=indx, constant=int(len(self.engine.list_obj) * 0.2),
                                  energy=energy * np.random.normal(1, 0.05))
 
-                if indx % 50 == 0:
-                    plt.savefig(str(path/'{indx}_graph.png'))
+                if indx % int(self.n_steps/ 10) == 0:
+                    plt.savefig(str(path/f'{int(indx)}_graph.png'))
 
                 plt.savefig(str(path/'last_graph.png'))
                 plt.close(fig)
                 torch.save(self.engine.interaction_model.state_dict(), str(path/'checkpoint_last.pth'))
 
+                self.engine.interaction_model_update()
+
+
             dataframe[str(energy) + '/population'] = hist_demogr
             dataframe[str(energy) + '/class0'] = ratios_class0
             dataframe[str(energy) + '/class2'] = ratios_class1
 
-            with open(str(path/'results.json'), 'w') as f:
-                json.dump(dataframe, f)
+            #with open(str(path/'results.json'), 'w') as f:
+            #    json.dump(dataframe, f)
 
             dataframe = pd.DataFrame(dataframe)
-            dataframe.to_csv(str(path/'results.csv'))
+            dataframe.to_csv(str(path / 'results.csv'))

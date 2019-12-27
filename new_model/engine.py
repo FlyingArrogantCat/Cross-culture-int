@@ -35,6 +35,10 @@ class MainEngine(torch.nn.Module):
         self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
         self.interaction_model = StaticInteractionModel(step=1e-1, size=self.size)
 
+    def interaction_model_update(self):
+        self.interaction_optimizer = torch.optim.Adam(self.interaction_model.params(), lr=1e-5)
+        self.interaction_model = StaticInteractionModel(step=1e-1, size=self.size)
+
     def scenario(self, list_cult=None, list_amt=None, list_class=None, list_education=None, list_fertility=None,
                  depth_memory=100, give_mem_child=False):
 
