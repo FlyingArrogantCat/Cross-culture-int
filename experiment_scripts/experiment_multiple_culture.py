@@ -1,4 +1,4 @@
-from model.engine import MainEngine
+from model.model_with_nn.engine import MainEngine
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime

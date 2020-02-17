@@ -1,9 +1,9 @@
 import torch
 import numpy as np
-from new_model.agent import Agent, CultureSpace
+from model.model_with_nn_ver2.agent import Agent, CultureSpace
 from .interaction_module import InteractionModel, StaticInteractionModel
 from .demography_module import DemographyEnginer
-from model.loss import InteractionLoss
+from model.model_with_nn.loss import InteractionLoss
 
 
 class MainEngine(torch.nn.Module):

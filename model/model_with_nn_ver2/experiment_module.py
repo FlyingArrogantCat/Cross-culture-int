@@ -1,9 +1,8 @@
 import torch
-from torch import nn
-import json
-from model.logger import logger
+from model.model_with_nn.logger import logger
 import numpy as np
-from model.engine import *
+from model.model_with_nn.engine import *
+from model.model_with_nn.interaction_module import *
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -94,7 +93,7 @@ class EnergyExperiment(torch.nn.Module):
                 plt.close(fig)
                 torch.save(self.engine.interaction_model.state_dict(), str(path/'checkpoint_last.pth'))
 
-                self.engine.interaction_model_update()
+            self.engine.interaction_model = StaticInteractionModel(step=1e-1, size=100)
 
 
             dataframe[str(energy) + '/population'] = hist_demogr
