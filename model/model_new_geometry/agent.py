@@ -6,7 +6,7 @@ class Agent:
     def __init__(self, culture_state, culture, n, age=0):
         self.age = age
         self.n = n
-        self.culture_state = culture_state + np.random.normal(0, 1)
+        self.culture_state = culture_state + np.random.normal(0, 0.3)
         self.culture_memory = np.array([])
         self.culture = culture
 
