@@ -6,20 +6,21 @@ from pathlib import Path
 import collections
 
 
-name_experiment = 'new_test_geom'
+name_experiment = 'geom'
 k = 1
-m = 1
+m = 2
 mu = 0.3
-angles = [0.3, 0.3]
-cultures = [0, 1]
-amt_member = [50, 50]
-bases = [[0, 1], [1, 0]]
+angles = [0.4, 0.4, 0.4]
+cultures = [0, 1, 2]
+amt_member = [100, 50, 20]
+bases = [[0, 1, 0], [1, 0, 0], [0, 0, 1]]
 crit_angle = 0.05
 n_steps = 200
 
 engine = MainEngine(k=k, m=m)  #death=0.013, birth=0.0115
-engine.define_demography(scale_b=0.15, scale_d=0.15, death_iter_border=100)
-engine.initialize_experiment(cultures, amt_member, bases, critical_angles=angles, education_scales=[0.1, 0.1], mu=mu)
+engine.define_demography(scale_b=0.17, scale_d=0.15, death_iter_border=100)
+engine.initialize_experiment(cultures, amt_member, bases, critical_angles=angles,
+                             education_scales=[0.1, 0.1, 0.1], mu=mu)
 
 date_now = str(datetime.datetime.now())[:19].replace(':', '_')
 date_now = date_now.replace('-', '_')
@@ -31,6 +32,7 @@ p.mkdir()
 hist_num = []
 cult1 = []
 cult2 = []
+cult3 = []
 list_std_per_cult = []
 list_mean_per_cult = []
 list_num_cluster_per_cult = []
@@ -40,7 +42,7 @@ for i in range(n_steps):
     print(i)
     engine.power_iteration()
 
-    fig, axes = plt.subplots(2, 2, figsize=(15, 5))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
     hist_num.append(len(engine.agents))
     axes[0, 0].plot(hist_num)
@@ -50,9 +52,10 @@ for i in range(n_steps):
 
     cult1.append(len([x.culture for x in engine.agents if x.culture == 0]))
     cult2.append(len([x.culture for x in engine.agents if x.culture == 1]))
-
+    cult3.append(len([x.culture for x in engine.agents if x.culture == 2]))
     axes[0, 1].plot(cult1, label='class 0')
     axes[0, 1].plot(cult2, label='class 1')
+    axes[0, 1].plot(cult3, label='class 2')
     axes[0, 1].set_title('Number of people per class')
     axes[0, 1].set_ylabel('#')
     axes[0, 1].set_xlabel('Steps')
@@ -63,6 +66,7 @@ for i in range(n_steps):
 
     axes[1, 0].plot(np.array(list_std_per_cult)[:, 0], label='class 0')
     axes[1, 0].plot(np.array(list_std_per_cult)[:, 1], label='class 1')
+    axes[1, 0].plot(np.array(list_std_per_cult)[:, 2], label='class 2')
     axes[1, 0].set_title('Standard deviation')
     axes[1, 0].set_ylabel('#')
     axes[1, 0].set_xlabel('Steps')
@@ -73,6 +77,7 @@ for i in range(n_steps):
 
     axes[1, 1].plot(np.array(list_num_cluster_per_cult)[:, 0], label='class 0')
     axes[1, 1].plot(np.array(list_num_cluster_per_cult)[:, 1], label='class 1')
+    axes[1, 1].plot(np.array(list_num_cluster_per_cult)[:, 2], label='class 2')
     axes[1, 1].plot(list_cross_cult, label='cross_cult_cluster')
     axes[1, 1].set_title('Clusters information')
     axes[1, 1].set_ylabel('#')

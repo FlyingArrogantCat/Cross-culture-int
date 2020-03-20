@@ -5,7 +5,8 @@ from .agent import *
 
 
 class MainEngine:
-    def __init__(self, k=1, m=1):
+    def __init__(self, k=1, m=1, step=0.1):
+        self.step = step
         self.cultures = []
         self.cult_member_amt = []
         self.culture_bases = []
@@ -47,10 +48,13 @@ class MainEngine:
 
         for i in range(0, len(self.cult_member_amt)):
             for j in range(0, self.cult_member_amt[i]):
-                self.agents.append(Agent(bases[i] + (bases[i] * np.random.normal(0, 0.1, self.n) /
-                                                     np.linalg.norm(bases[i])), cultures[i],
+                new_vec = np.ones(self.n) + self.culture_bases[i]
+                while self.angle_vec(self.culture_bases[i], new_vec) < self.critical_angles[i]:
+                    new_vec = np.random.normal(1, 1, self.n)
+                    new_vec /= np.linalg.norm(new_vec)
+                self.agents.append(Agent(new_vec, cultures[i],
                                          self.n,
-                                         age=np.random.randint(14, 20)))
+                                         age=np.random.randint(5, 20)))
 
         self.graph_list_num_cluster_unique_culture = [0] * len(cultures)
 
@@ -140,7 +144,9 @@ class MainEngine:
             noticed_indx_list.append(indx)
             free_indexs_list = [x for x in free_indexs_list if x not in noticed_indx_list]
 
-        num_dem_interaction = int(self.birth_scale * len(pairs)) + 1
+        num_dem_interaction = int(self.birth_scale * len(self.agents) * np.random.normal(1,0.3))
+        num_death = int(self.death_scale * len(self.agents) * np.random.normal(1,0.3))
+
         birth_index = np.random.randint(0, len(pairs), num_dem_interaction)
 
         for indx in birth_index:
@@ -152,7 +158,6 @@ class MainEngine:
                                      n=self.n)
                                )
 
-        num_death = int(self.death_scale * len(self.agents) / 2)
         amt_death = 0
         del_indexs = []
         index_list = np.arange(len(self.agents))
@@ -199,34 +204,40 @@ class MainEngine:
             agent.culture_state /= np.linalg.norm(agent.culture_state)
 
     def power_iteration(self):
+
+        self.graph_list_num_cluster_unique_culture = [0] * len(self.cultures)
+        self.graph_num_cluster_cross_culture = 0
+        self.graph_list_std_per_culture = []
+        self.graph_list_mean_per_culture = []
+
         for obj in self.agents:
             np.append(obj.culture_memory, obj.culture_state)
         critical_angle = 0.1
         list_clusters = self.clusterization(self.agents, critical_angle)
         pairs, mean_cultures_state = self.clusters_factorization(list_clusters)
-        interaction_angle = 0.1
+        interaction_angle = 0.4
 
         list_angles_cluster = np.zeros((len(self.agents), 2))
         for pair in pairs:
             state_1 = mean_cultures_state[pair[0]]
             state_2 = mean_cultures_state[pair[1]]
 
-            new_1 = state_1 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * (state_2 - state_1)
-            new_2 = state_2 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * (state_1 - state_2)
+            new_1 = state_1 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 1) * (state_2 - state_1)
+            new_2 = state_2 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 1) * (state_1 - state_2)
 
             temp_angle = 0
             for indx, indx_obj in enumerate(list_clusters[pair[0]]):
                 list_angles_cluster[indx_obj, 0] = self.agents[indx_obj].culture
                 temp_vec = deepcopy(self.agents[indx_obj].culture_state)
-                self.agents[indx_obj].culture_state = (self.agents[indx_obj].culture_state + new_1) / \
-                                                      np.linalg.norm(self.agents[indx_obj].culture_state + new_1)
+                self.agents[indx_obj].culture_state = self.agents[indx_obj].culture_state + self.step * (self.agents[indx_obj].culture_state + new_1) / \
+                                                      np.linalg.norm(self.agents[indx_obj].culture_state)
                 list_angles_cluster[indx_obj, 1] = self.angle_vec(self.agents[indx_obj].culture_state, temp_vec)
 
             for indx, indx_obj in enumerate(list_clusters[pair[1]]):
                 list_angles_cluster[indx_obj, 0] = self.agents[indx_obj].culture
                 temp_vec = deepcopy(self.agents[indx_obj].culture_state)
-                self.agents[indx_obj].culture_state = (self.agents[indx_obj].culture_state + new_2) / \
-                                                      np.linalg.norm(self.agents[indx_obj].culture_state + new_2)
+                self.agents[indx_obj].culture_state = self.agents[indx_obj].culture_state + self.step * (self.agents[indx_obj].culture_state + new_2) / \
+                                                      np.linalg.norm(self.agents[indx_obj].culture_state)
                 list_angles_cluster[indx_obj, 1] = self.angle_vec(self.agents[indx_obj].culture_state, temp_vec)
 
         for cult in self.cultures:
