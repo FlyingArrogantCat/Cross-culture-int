@@ -13,38 +13,33 @@ class MainEngine:
         self.critical_angles = []
         self.agents = []
         self.education = []
+        self.fertility = []
         self.n = k + m
         self.mu = 0
 
         self.birth_scale = 0
         self.death_scale = 0
-        self.death_iter_border = 1
-        self.death_at_birth = 0
-
-        self.death_curve = lambda x: (1 - self.death_at_birth) * x / self.death_iter_border + self.death_at_birth
-        self.birth_curve = lambda x: True if 14 < x < 70 else False
 
         self.graph_num_cluster_cross_culture = 0
         self.graph_list_num_cluster_unique_culture = []
         self.graph_list_std_per_culture = []
         self.graph_list_mean_per_culture = []
 
-    def define_demography(self, scale_b=0.1, scale_d=0.1, death_iter_border=100):
+    def define_demography(self, scale_b=0.1, scale_d=0.1):
         self.birth_scale = scale_b
         self.death_scale = scale_d
-        self.death_iter_border = death_iter_border
-        self.death_at_birth = 0.005
 
-        self.death_curve = lambda x: (1 - self.death_at_birth) * x / self.death_iter_border + self.death_at_birth
-        self.birth_curve = lambda x: True if 14 < x < 70 else False
-
-    def initialize_experiment(self, cultures, member_amt, bases, critical_angles, education_scales, mu=1):
+    def initialize_experiment(self, cultures, member_amt, bases, critical_angles, education_scales, mu=1, fertility=None):
         self.cultures = cultures
         self.cult_member_amt = member_amt
         self.culture_bases = bases
         self.critical_angles = critical_angles
         self.education = education_scales
         self.mu = mu
+
+        self.fertility = [1] * len(self.cultures)
+        if fertility is not None:
+            self.fertility = fertility
 
         for i in range(0, len(self.cult_member_amt)):
             for j in range(0, self.cult_member_amt[i]):
@@ -54,7 +49,7 @@ class MainEngine:
                     new_vec /= np.linalg.norm(new_vec)
                 self.agents.append(Agent(new_vec, cultures[i],
                                          self.n,
-                                         age=np.random.randint(5, 20)))
+                                         age=0))
 
         self.graph_list_num_cluster_unique_culture = [0] * len(cultures)
 
@@ -118,46 +113,51 @@ class MainEngine:
     def do_demography_iteration(self):
         #TODO
         # Add one more regime for randomly choosing the pairs
-        for obj in self.agents:
-            obj.age += 1
+        num_death = int(self.death_scale * len(self.agents))
 
-        pairs = []
-        noticed_indx_list = []
-        free_indexs_list = [i for i in range(0, len(self.agents))]
-        while len(free_indexs_list) > 1:
-            i = free_indexs_list[0]
-            noticed_indx_list.append(i)
+        amt_agent_cult = [np.sum([1 for x in self.agents if x.culture == y]) for y in self.cultures]
+        amt_born_cult = [x * y for x, y in zip(amt_agent_cult, self.fertility)]
 
-            if not self.birth_curve(self.agents[i].age):
+        for x, y in zip(self.cultures, amt_born_cult):
+            num_dem_interaction = int(self.birth_scale * y)
+            pairs = []
+            noticed_indx_list = []
+            free_indexs_list = []
+            for i in range(len(self.agents)):
+                if self.agents[i].culture == x:
+                    free_indexs_list.append(i)
+
+            while len(free_indexs_list) > 1:
+                i = free_indexs_list[0]
+                noticed_indx_list.append(i)
+
+                if self.agents[i].age == 1:
+                    free_indexs_list = [x for x in free_indexs_list if x not in noticed_indx_list]
+                    continue
+
+                min_val = 100000
+                indx = 0
+                for j in range(0, len(self.agents)):
+                    if j not in noticed_indx_list:
+                        val = self.angle_vec(self.agents[i].culture_state, self.agents[j].culture_state)
+                        if val < min_val:
+                            indx = j
+                            min_val = val
+                pairs.append([i, indx])
+                noticed_indx_list.append(indx)
                 free_indexs_list = [x for x in free_indexs_list if x not in noticed_indx_list]
-                continue
 
-            min_val = 10
-            indx = 0
-            for j in range(0, len(self.agents)):
-                if j not in noticed_indx_list:
-                    val = self.angle_vec(self.agents[i].culture_state, self.agents[j].culture_state)
-                    if val < min_val:
-                        indx = j
-                        min_val = val
-            pairs.append([i, indx])
-            noticed_indx_list.append(indx)
-            free_indexs_list = [x for x in free_indexs_list if x not in noticed_indx_list]
+            birth_index = np.random.randint(0, len(pairs), num_dem_interaction)
 
-        num_dem_interaction = int(self.birth_scale * len(self.agents) * np.random.normal(1,0.3))
-        num_death = int(self.death_scale * len(self.agents) * np.random.normal(1,0.3))
-
-        birth_index = np.random.randint(0, len(pairs), num_dem_interaction)
-
-        for indx in birth_index:
-            pair = pairs[indx]
-            self.agents.append(Agent(culture_state=(self.agents[pair[0]].culture_state +
-                                                    self.agents[pair[1]].culture_state)/2,
-                                     culture=(self.agents[pair[0]].culture if np.random.uniform(0, 1) >
-                                              0.5 else self.agents[pair[1]].culture),
-                                     n=self.n)
-                               )
-
+            for indx in birth_index:
+                pair = pairs[indx]
+                self.agents.append(Agent(culture_state=(self.agents[pair[0]].culture_state +
+                                                        self.agents[pair[1]].culture_state)/2,
+                                         culture=(self.agents[pair[0]].culture if np.random.uniform(0, 1) >
+                                                  0.5 else self.agents[pair[1]].culture),
+                                         n=self.n,
+                                         age=1)
+                                   )
         amt_death = 0
         del_indexs = []
         index_list = np.arange(len(self.agents))
@@ -165,9 +165,11 @@ class MainEngine:
 
         while amt_death < num_death:
             for indx in [i for i in index_list if i not in del_indexs]:
-                if np.random.uniform(0, 1) < self.death_curve(self.agents[indx].age):
+                if self.agents[indx].age == 0:
                     del_indexs.append(indx)
                     amt_death += 1
+                    if amt_death > num_death:
+                        break
 
         del_indexs = - np.sort(-np.unique(del_indexs))
         del_indexs = del_indexs[:-1]
@@ -180,7 +182,7 @@ class MainEngine:
     def change_culture_base(self):
         for i in range(0, len(self.culture_bases)):
             new_base = np.zeros(self.n)
-            indexes =[]
+            indexes = []
             for j in range(0, len(self.agents)):
                 if self.cultures[i] == self.agents[j].culture:
                     indexes.append(j)
@@ -192,16 +194,23 @@ class MainEngine:
             angles = [self.angle_vec(new_base, self.agents[k].culture_state) for k in indexes]
             self.critical_angles[i] = np.std(angles) ** 2
 
-    def do_education_process(self):
-        for agent in self.agents:
-            cult = agent.culture
-            new_vec = np.ones(self.n)
-            while self.angle_vec(self.culture_bases[cult], new_vec) + \
-                    self.education[cult] < self.angle_vec(self.culture_bases[cult], agent.culture_state):
-                new_vec = np.random.normal(1, 1, self.n)
-                new_vec /= np.linalg.norm(new_vec)
-            agent.culture_state = agent.culture_state + self.education[cult] * new_vec
-            agent.culture_state /= np.linalg.norm(agent.culture_state)
+    def do_education_process(self, list_clusters):
+        mean_culture_state = np.zeros(self.n)
+        for cluster in list_clusters:
+            for indx_agent in cluster:
+                mean_culture_state += self.agents[indx_agent].culture_state
+            mean_culture_state /= len(cluster)
+
+            for indx_agent in cluster:
+                if self.agents[indx_agent].age == 1:
+                    cult = self.agents[indx_agent].culture
+                    new_vec = np.ones(self.n)
+                    while self.angle_vec(mean_culture_state, new_vec) + \
+                            self.education[cult] < self.angle_vec(mean_culture_state, self.agents[indx_agent].culture_state):
+                        new_vec = np.random.normal(0, 5, self.n)
+                        new_vec /= np.linalg.norm(new_vec)
+                    self.agents[indx_agent].culture_state = self.agents[indx_agent].culture_state + self.education[cult] * new_vec
+                    self.agents[indx_agent].culture_state /= np.linalg.norm(self.agents[indx_agent].culture_state)
 
     def power_iteration(self):
 
@@ -257,10 +266,17 @@ class MainEngine:
                 self.graph_list_num_cluster_unique_culture[temp_vec[0]] += 1
             else:
                 self.graph_num_cluster_cross_culture += 1
+
         self.culture_rechanging()
         self.do_demography_iteration()
+
+        critical_angle = 0.1
+        list_clusters = self.clusterization(self.agents, critical_angle)
+        self.do_education_process(list_clusters)
         self.change_culture_base()
-        self.do_education_process()
+
+        for agent in self.agents:
+            agent.age = 0
 
     @staticmethod
     def angle(obj1, obj2):
