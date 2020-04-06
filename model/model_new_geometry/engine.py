@@ -236,7 +236,7 @@ class MainEngine:
                 self.new_cultures += 1
                 break
 
-    def power_iteration(self):
+    def power_iteration(self, cult_appear=True):
 
         self.graph_list_num_cluster_unique_culture = [0] * len(self.cultures)
         self.graph_num_cluster_cross_culture = 0
@@ -299,9 +299,10 @@ class MainEngine:
         self.do_education_process(list_clusters)
         self.change_culture_base()
 
-        critical_angle = 0.1
-        list_clusters = self.clusterization(self.agents, critical_angle)
-        self.new_culture_processing(list_clusters)
+        if cult_appear:
+            critical_angle = 0.1
+            list_clusters = self.clusterization(self.agents, critical_angle)
+            self.new_culture_processing(list_clusters)
 
         for agent in self.agents:
             agent.age = 0
