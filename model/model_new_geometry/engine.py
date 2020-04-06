@@ -16,6 +16,7 @@ class MainEngine:
         self.fertility = []
         self.n = k + m
         self.mu = 0
+        self.new_cultures = 0
 
         self.birth_scale = 0
         self.death_scale = 0
@@ -212,6 +213,29 @@ class MainEngine:
                     self.agents[indx_agent].culture_state = self.agents[indx_agent].culture_state + self.education[cult] * new_vec
                     self.agents[indx_agent].culture_state /= np.linalg.norm(self.agents[indx_agent].culture_state)
 
+    def new_culture_processing(self, list_clusters, internal_parameter=0.75):
+        amt_agent_cult = [np.sum([1 for x in self.agents if x.culture == y]) for y in self.cultures]
+        for cluster in list_clusters:
+            flag = 1 if len(np.unique([self.agents[x].culture for x in cluster])) > 1 else 0
+
+            if self.new_cultures < 1 and flag == 0 and len(cluster) / amt_agent_cult[self.agents[cluster[0]].culture] > internal_parameter:
+                self.cultures.append(len(self.cultures))
+
+                mean_culture_state = 0
+                for indx_agent in cluster:
+                    mean_culture_state += self.agents[indx_agent].culture_state
+                mean_culture_state /= len(cluster)
+                self.culture_bases.append(mean_culture_state)
+
+                self.critical_angles.append(self.critical_angles[self.agents[cluster[0]].culture])
+                self.education.append(self.education[self.agents[cluster[0]].culture])
+
+                for indx_agent in cluster:
+                    self.agents[indx_agent].culture = self.cultures[-1]
+
+                self.new_cultures += 1
+                break
+
     def power_iteration(self):
 
         self.graph_list_num_cluster_unique_culture = [0] * len(self.cultures)
@@ -231,8 +255,8 @@ class MainEngine:
             state_1 = mean_cultures_state[pair[0]]
             state_2 = mean_cultures_state[pair[1]]
 
-            new_1 = state_1 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 1) * (state_2 - state_1)
-            new_2 = state_2 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 1) * (state_1 - state_2)
+            new_1 = state_1 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 0.3) * (state_2 - state_1)
+            new_2 = state_2 + np.cos(interaction_angle + self.angle_vec(state_1, state_2)) * np.random.uniform(0, 0.3) * (state_1 - state_2)
 
             temp_angle = 0
             for indx, indx_obj in enumerate(list_clusters[pair[0]]):
@@ -274,6 +298,10 @@ class MainEngine:
         list_clusters = self.clusterization(self.agents, critical_angle)
         self.do_education_process(list_clusters)
         self.change_culture_base()
+
+        critical_angle = 0.1
+        list_clusters = self.clusterization(self.agents, critical_angle)
+        self.new_culture_processing(list_clusters)
 
         for agent in self.agents:
             agent.age = 0
