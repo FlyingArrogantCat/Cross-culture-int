@@ -21,10 +21,11 @@ def main():
     cultures = [0, 1, 2]
     amt_member = [100, 50, 20]
     bases = [[0, 1, 0], [1, 0, 0], [0, 0, 1]]
-    fertility = [1, 1, 1]
+    fertility = [1, 1.07, 1.1]
     crit_angle = 0.05
     n_steps = 200
     education = [0.1, 0.1, 0.1]
+    cult_appear = True
 
     engine = MainEngine(k=k, m=m)
     engine.define_demography(scale_b=0.15, scale_d=0.15)
@@ -44,7 +45,8 @@ def main():
     shutil.copy(str(path_curr_script), str(p))
 
     internal_parameters = {'k': k, 'm': m, 'mu': mu, 'cult_angles': angles, 'amt_member': amt_member, 'bases': bases,
-                           'fertility': fertility, 'cricical_anlge_cluster': crit_angle, 'education': education}
+                           'fertility': fertility, 'cricical_anlge_cluster': crit_angle, 'education': education,
+                           'scale_birth': engine.birth_scale, 'scale_death': engine.death_scale, 'cult_appear': cult_appear}
     json_file = {'date_experiment': str(datetime.datetime.now())[:19], 'internal_param': internal_parameters}
     with open(f'./images/{name_experiment}_experiment_{date_now}/params.json', 'w') as outfile:
         json.dump(json_file, outfile)
@@ -64,7 +66,7 @@ def main():
     for i in range(n_steps):
         temp_cultures = deepcopy(engine.cultures)
         print(i)
-        engine.power_iteration(cult_appear=False)
+        engine.power_iteration(indx_iter=i, cult_appear=cult_appear)
 
         fig1, ax1 = plt.subplots(figsize=(15, 15))
         fig2, ax2 = plt.subplots(figsize=(15, 15))
