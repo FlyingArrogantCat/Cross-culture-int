@@ -236,12 +236,34 @@ class MainEngine:
                 self.new_cultures += 1
                 break
 
-    def power_iteration(self, indx_iter, cult_appear=True):
+    def power_iteration(self, indx_iter, cult_appear=True, vec_product=False):
 
         self.graph_list_num_cluster_unique_culture = [0] * len(self.cultures)
         self.graph_num_cluster_cross_culture = 0
         self.graph_list_std_per_culture = []
         self.graph_list_mean_per_culture = []
+
+        if vec_product and np.random.uniform(0, 1) > 0.5:
+            for indx, cult in enumerate(self.cultures):
+                list_agents_cult = []
+                for obj in self.agents:
+                    if obj.culture == cult:
+                        list_agents_cult.append(self.angle_vec(self.culture_bases[cult], obj.culture_state))
+
+                if np.std(list_agents_cult)**2 > self.critical_angles[indx]/2:
+                    obj_list_indx = []
+
+                    for indx_obj, obj in enumerate(self.agents):
+                        if obj.culture == cult:
+                            obj_list_indx.append(indx_obj)
+
+                    obj_list = []
+                    indx_obj = np.random.randint(0, len(obj_list_indx), 1)
+                    for iter in np.random.choice(len(obj_list_indx), self.n-1, replace=False):
+                        obj_list.append(self.agents[iter].culture_state)
+                    self.agents[int(indx_obj)].culture_state = self.vector_product(obj_list)
+
+                            #obj.culture_state = self.vector_product(self.culture_bases[cult], obj.culture_state)
 
         for obj in self.agents:
             np.append(obj.culture_memory, obj.culture_state)
@@ -306,6 +328,27 @@ class MainEngine:
 
         for agent in self.agents:
             agent.age = 0
+
+    def vector_product(self, vec_set):
+
+        result_vec = np.zeros(self.n)
+        if len(vec_set) != self.n - 1:
+            print(f'Error: in {vec_set} there is not enough elements. Check the size')
+
+        matrix = np.array(vec_set)
+        mult = 1
+        for i in range(self.n):
+            minor = np.delete(matrix,i, axis=1)
+            mult =1 if (i+1) % 2 != 0 else -1
+            result_vec[i] = mult * np.linalg.norm(minor)
+        return result_vec
+
+    @staticmethod
+    def signum(x):
+        if x == 0:
+            return 0
+
+        return 1 if x>0 else -1
 
     @staticmethod
     def angle(obj1, obj2):

@@ -12,7 +12,7 @@ import sys
 
 
 def main():
-    name_experiment = 'sep_exp'
+    name_experiment = 'Space_expansion'
 
     k = 1
     m = 2
@@ -26,7 +26,7 @@ def main():
     n_steps = 200
     education = [0.1, 0.1, 0.1]
     cult_appear = False
-
+    vec_product = True
     engine = MainEngine(k=k, m=m)
     engine.define_demography(scale_b=0.15, scale_d=0.15)
     engine.initialize_experiment(cultures, amt_member, bases, critical_angles=angles,
@@ -46,7 +46,9 @@ def main():
 
     internal_parameters = {'k': k, 'm': m, 'mu': mu, 'cult_angles': angles, 'amt_member': amt_member, 'bases': bases,
                            'fertility': fertility, 'cricical_anlge_cluster': crit_angle, 'education': education,
-                           'scale_birth': engine.birth_scale, 'scale_death': engine.death_scale, 'cult_appear': cult_appear}
+                           'scale_birth': engine.birth_scale, 'scale_death': engine.death_scale,
+                           'cult_appear': cult_appear, 'vec_product':vec_product}
+
     json_file = {'date_experiment': str(datetime.datetime.now())[:19], 'internal_param': internal_parameters}
     with open(f'./images/{name_experiment}_experiment_{date_now}/params.json', 'w') as outfile:
         json.dump(json_file, outfile)
@@ -66,14 +68,14 @@ def main():
     for i in range(n_steps):
         temp_cultures = deepcopy(engine.cultures)
         print(i)
-        engine.power_iteration(indx_iter=i, cult_appear=cult_appear)
+        engine.power_iteration(indx_iter=i, cult_appear=cult_appear, vec_product=vec_product)
 
         fig1, ax1 = plt.subplots(figsize=(15, 15))
         fig2, ax2 = plt.subplots(figsize=(15, 15))
         fig3, ax3 = plt.subplots(figsize=(15, 15))
         fig4, ax4 = plt.subplots(figsize=(15, 15))
 
-        matplotlib.rcParams.update({'font.size': 15})
+        matplotlib.rcParams.update({'font.size': 18})
 
         hist_num.append(len(engine.agents))
         ax1.plot(hist_num)
@@ -101,9 +103,9 @@ def main():
             list_cult_amt[culture].append(len([x.culture for x in engine.agents if x.culture == culture]))
 
             name_str = f'культура {culture}'
-            ax2.plot(list_cult_amt[culture], linestyle=linestyles[culture], label=name_str)
-            ax3.plot(np.array(list_std_per_cult)[:, culture], linestyle=linestyles[culture], label=name_str)
-            ax4.plot(np.array(list_num_cluster_per_cult)[:, culture], linestyle=linestyles[culture], label=name_str)
+            ax2.plot(list_cult_amt[culture], linestyle=linestyles[culture], linewidth=3, label=name_str)
+            ax3.plot(np.array(list_std_per_cult)[:, culture], linestyle=linestyles[culture], linewidth=3, label=name_str)
+            ax4.plot(np.array(list_num_cluster_per_cult)[:, culture], linestyle=linestyles[culture], linewidth=3, label=name_str)
 
         ax1.set_title('Численность')
         ax1.set_ylabel('#')
